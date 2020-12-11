@@ -11,10 +11,14 @@ func dentist(wait <-chan chan int, dent <-chan chan int) {
 
 	//loop forever.
 	for {
-
-		//if the channel wait is empty.
-		if len(wait) == 0 {
-
+		select {
+		//patient leaves waiting room
+		case <- wait:	
+			p := <- dent
+			//dentist releases the patient
+			fmt.Printf("\nPatient %d has been treated", <-p)
+		//if waiting room is empty
+		default:
 			//dentist sleeps and waits for patient
 			fmt.Printf("\nDentist is asleep.")
 			p := <-dent
@@ -23,32 +27,24 @@ func dentist(wait <-chan chan int, dent <-chan chan int) {
 			time.Sleep(2 * time.Second)
 			fmt.Printf("\nPatient %v has been treated", <-p)
 		}
-
-		select {
-		//patient leaves waiting room
-		case <- wait:	
-			p := <- dent
-			//dentist releases the patient
-			fmt.Printf("\nPatient %d has been treated", <-p)
-		}
-
 	}
 }
 
 func patient(wait chan<- chan int, dent chan<- chan int, id int) {
 
+	//patient represented as this int channel
 	p := make(chan int)
 
 	fmt.Printf("\nPatient %v wants to be treated.", id)
 
-	
 	select {
-	//check if the dentist is busy
+	//check if dentist is asleep
 	case dent <- p:
 		fmt.Printf("\nPatient %v is having treatment.", id)
 
 		//patient falls asleep
 		p <- id
+	//if dentist is busy, join waiting room
 	default:
 		fmt.Printf("\nPatient %v is waiting.", id)
 		//patient goes to waiting room
@@ -80,9 +76,24 @@ func main() {
 		time.Sleep(1 * time.Second)
 	}
 
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(3000 * time.Millisecond)
 
 }
+
+
+//old code, keep just in case,
+//formatiing on the refactor looks better.
+		//if the channel wait is empty.
+		// if len(wait) == 0 {
+
+		// 	//dentist sleeps and waits for patient
+		// 	fmt.Printf("\nDentist is asleep.")
+		// 	p := <-dent
+
+		// 	//when p arrives from dent
+		// 	time.Sleep(2 * time.Second)
+		// 	fmt.Printf("\nPatient %v has been treated", <-p)
+		// }
 
 			
 	
