@@ -2,10 +2,10 @@
 
 Coursework for Module CO611
 
-| Assesment | Grade |
-| :---: | :---: |
-|a1         |  82%  |
-|a2         |       |
-|a3         |       |
+| Assesment | Type | Grade |
+| :---: | :---: | :---: |
+|a1|Java|82%|
+|a2|Golang|n/a|
+|a3|Presentation|n/a|
 
 Overall Grade Achieved
