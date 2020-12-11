@@ -9,66 +9,51 @@ import (
 
 func dentist(h_wait chan chan int , l_wait <-chan chan int, dent <-chan chan int) {
 
-	//start a timer
 	timer := time.NewTimer(4 * time.Second)
 
-	//loop forever.
 	for {
-		//check high priority queue first, if its empty
-		if len(h_wait) == 0 {
-
-			//then check if low priority queue, if this is empty
-			if len(l_wait) == 0 {
-				//dentist sleeps and waits for patient
-				fmt.Printf("\nDentist is asleep.")
-				p := <-dent
-
-				//when p arrives from dent, do some work
-				time.Sleep(2 * time.Second)
-				//and wake up the patient
-				fmt.Printf("\nPatient %v has been treated", <-p)
-			} else {
-				//if there is no high priority patients, but low priority patients
-				//see l_wait patients
-				select {
-					//patient leaves l_wait room
-					case <- l_wait:	
-						p := <- dent
-						//dentist releases the patient
-						time.Sleep(2 * time.Second)
-						fmt.Printf("\nPatient %d has been treated from l", <-p)
-				}
-
-			}
-
-		} else {
-			// if high priority treatment is required
-			select {
-				//patient leaves h_wait room
-				case <- h_wait:	
-					p := <- dent
-					//dentist releases the patient
-					time.Sleep(2 * time.Second)
-					fmt.Printf("\nPatient %d has been treated from h", <-p)
-			}
-
-		}
-
 		select {
-		//if timer ends
+		//if someone is waiting in high priority,
+		//remove them
+		case <- h_wait:
+			//dentist does some work
+			time.Sleep(2 * time.Second)
+			//dentist releases the patient
+			p := <- dent
+			fmt.Printf("\nPatient %d has been treated from high priority queue", <-p)
+		//if someone is waiting in low wait
+		case <- l_wait:
+			//and high wait is empty
+			if len(h_wait) == 0 {
+				//dentist does some work
+				time.Sleep(2 * time.Second)
+				//dentist releases the patient
+				p := <- dent
+				fmt.Printf("\nPatient %d has been treated from low priority queue", <-p)
+			}
+		//if the timer is triggered, and low wait is empty
 		case <-timer.C:
-			//and low p patients are waiting
 			if len(l_wait) > 0 {
-				//move the patients
+				//remove them from the low priority queue
 				p := <- l_wait
+				//put that patient into high priority
 				h_wait <- p
 				fmt.Printf("\nPatient has been moved from low to high")
 				//restart the timer
 				timer = time.NewTimer(4 * time.Second)
 			}
 		default:
+			//dentist sleeps and waits for patient
+			fmt.Printf("\nDentist is asleep.")
+			//blocks until a patient arrives
+			p := <-dent
+			//when p arrives from dent, do some work
+			time.Sleep(2 * time.Second)
+			//and wake up the patient
+			fmt.Printf("\nPatient %v has been treated", <-p)
 		}
 	}
+
 }
 
 func patient(wait chan<- chan int, dent chan<- chan int, id int) {
@@ -131,11 +116,81 @@ func main() {
 // If there was a fixed number of patients, they would all be served
 // just not in a fair order.
 
-// If there was an infinite amount of patient, or a constant flow of patients
+// If there was an infinite amount of patient, or a constant flow of patients with no fairness
 // then some patients may never get served.
 
-// The best approach would be to implement a some kind of queue, using ageing to make sure
+// The best approach would be to implement a some kind of fairness queue, using ageing to make sure
 // low priority patients also get served.
+
+
+
+
+
+//old messy function, has since been refactored. Keep just incase.
+
+// func dentist2(h_wait chan chan int , l_wait <-chan chan int, dent <-chan chan int) {
+
+// 	//start a timer
+// 	timer := time.NewTimer(4 * time.Second)
+
+// 	//loop forever.
+// 	for {
+// 		//check high priority queue first, if its empty
+// 		if len(h_wait) == 0 {
+
+// 			//then check if low priority queue, if this is empty
+// 			if len(l_wait) == 0 {
+// 				//dentist sleeps and waits for patient
+// 				fmt.Printf("\nDentist is asleep.")
+// 				p := <-dent
+
+// 				//when p arrives from dent, do some work
+// 				time.Sleep(2 * time.Second)
+// 				//and wake up the patient
+// 				fmt.Printf("\nPatient %v has been treated", <-p)
+// 			} else {
+// 				//if there is no high priority patients, but low priority patients
+// 				//see l_wait patients
+// 				select {
+// 					//patient leaves l_wait room
+// 					case <- l_wait:	
+// 						p := <- dent
+// 						//dentist releases the patient
+// 						time.Sleep(2 * time.Second)
+// 						fmt.Printf("\nPatient %d has been treated from l", <-p)
+// 				}
+
+// 			}
+
+// 		} else {
+// 			// if high priority treatment is required
+// 			select {
+// 				//patient leaves h_wait room
+// 				case <- h_wait:	
+// 					p := <- dent
+// 					//dentist releases the patient
+// 					time.Sleep(2 * time.Second)
+// 					fmt.Printf("\nPatient %d has been treated from h", <-p)
+// 			}
+
+// 		}
+
+// 		select {
+// 		//if timer ends
+// 		case <-timer.C:
+// 			//and low p patients are waiting
+// 			if len(l_wait) > 0 {
+// 				//move the patients
+// 				p := <- l_wait
+// 				h_wait <- p
+// 				fmt.Printf("\nPatient has been moved from low to high")
+// 				//restart the timer
+// 				timer = time.NewTimer(4 * time.Second)
+// 			}
+// 		default:
+// 		}
+// 	}
+// }
 
 
 			
