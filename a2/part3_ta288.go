@@ -10,19 +10,6 @@ func dentist(wait <-chan chan int, dent <-chan chan int) {
 
 	//loop forever.
 	for {
-
-		//if the channel wait is empty.
-		if len(wait) == 0 {
-
-			//dentist sleeps and waits for patient
-			fmt.Printf("\nDentist is asleep.")
-			p := <-dent
-
-			//when p arrives from dent
-			time.Sleep(2 * time.Second)
-			fmt.Printf("\nPatient %v has been treated", <-p)
-		}
-
 		select {
 		//patient leaves waiting room
 		case <- wait:	
@@ -30,7 +17,18 @@ func dentist(wait <-chan chan int, dent <-chan chan int) {
 			//dentist releases the patient
 			time.Sleep(2 * time.Second)
 			fmt.Printf("\nPatient %d has been treated", <-p)
+		//if the channel wait is empty.
+		default:
+			//dentist sleeps and waits for patient
+			fmt.Printf("\nDentist is asleep.")
+			//blocks until a patient arrives
+			p := <- dent
+			//when p arrives from dent, do some work
+			time.Sleep(2 * time.Second)
+			//and wake up the patient
+			fmt.Printf("\nPatient %v has been treated", <-p)
 		}
+	
 	}
 }
 
@@ -40,21 +38,28 @@ func assistant(h_wait chan chan int, l_wait <-chan chan int, wait chan<- chan in
 
 	//loop forever
 	for {
-
 		select {
 			//if timer ends
 			case <-timer.C:
 				//and low p patients are waiting
 				if len(l_wait) > 0 {
-					//move the patients
+					//move the patients low
 					p := <- l_wait
+					//move them to high
 					h_wait <- p
 					fmt.Printf("\nAssistant has moved patient from low to high")
 					//restart the timer
 					timer = time.NewTimer(5 * time.Second)
 				}
+			// if patients in high wait
 			case p := <- h_wait:
+				//move them to waiting room
 				wait <- p
+			//otherwise just fall asleep
+			case p := <- l_wait:
+				if len(h_wait) == 0 {
+					wait <- p
+				}
 			default:
 			}
 
@@ -121,16 +126,23 @@ func main() {
 
 }
 
-// 2.b
-// Let's assume that go doesn't have fairness.
-// If there was a fixed number of patients, they would all be served
-// just not in a fair order.
+//3.b
+// if the patient fails for whatever reason, there will be no communication
+// between patients and the dentist. Part 2 does not have any type of patient.
+// meaning that the it will be stuck in a state where patients are waiting,
+// and the dentist will recieve nothing. The assistant in part 3 resolves this issue.
 
-// If there was an infinite amount of patient, or a constant flow of patients
-// then some patients may never get served.
 
-// The best approach would be to implement a some kind of queue, using ageing to make sure
-// low priority patients also get served.
+// OLD CODE
+// if len(wait) == 0 {
+
+// 	//dentist sleeps and waits for patient
+// 	fmt.Printf("\nDentist is asleep.")
+// 	p := <-dent
+
+// 	//when p arrives from dent
+// 	time.Sleep(2 * time.Second)
+// 	fmt.Printf("\nPatient %v has been treated", <-p)
 
 
 			

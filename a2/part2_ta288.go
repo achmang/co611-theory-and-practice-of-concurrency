@@ -62,7 +62,6 @@ func patient(wait chan<- chan int, dent chan<- chan int, id int) {
 
 	fmt.Printf("\nPatient %v wants to be treated.", id)
 
-	
 	select {
 	//check if the dentist is busy
 	case dent <- p:
@@ -121,7 +120,6 @@ func main() {
 
 // The best approach would be to implement a some kind of fairness queue, using ageing to make sure
 // low priority patients also get served.
-
 
 
 
